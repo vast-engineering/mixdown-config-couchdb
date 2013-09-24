@@ -1,0 +1,33 @@
+{
+  "name": "mixdown-config-couchdb",
+  "version": "0.0.0",
+  "description": "Mixdown service config provider for couchdb.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mixdown/mixdown-config-couchdb.git"
+  },
+  "keywords": [
+    "mixdown",
+    "config",
+    "couchdb"
+  ],
+  "author": "tommy@vast.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mixdown/mixdown-config-couchdb/issues"
+  },
+  "dependencies": {
+    "cradle": "~0.6.6",
+    "lodash": "~2.1.0"
+  },
+  "devDependencies": {
+    "mocha": "~1.12.0",
+    "tape": "~1.1.0",
+    "tap": "~0.4.4",
+    "broadway": "~0.2.7"
+  }
+}
