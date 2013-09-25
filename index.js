@@ -44,7 +44,7 @@ CouchConfig.prototype.init = function(callback) {
     else {
       that.getSites(function(err, sites) {
 
-        that.emit('sites', sites);
+        that.emit('update', sites);
         
         _.isFunction(callback) ? callback(err, sites) : null;
       });
@@ -58,7 +58,7 @@ CouchConfig.prototype.init = function(callback) {
       feed.on('change', function(change) {
         var site = change.doc;
         site.id = site._id;
-        that.emit('sites', [site]);
+        that.emit('update', [site]);
       });
 
       feed.on('error', function(err) {
