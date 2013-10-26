@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "cradle": "~0.6.6",
-    "lodash": "~2.1.0"
+    "lodash": "~2.2.0"
   },
   "devDependencies": {
     "mocha": "~1.12.0",

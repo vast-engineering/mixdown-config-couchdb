@@ -42,7 +42,7 @@ CouchConfig.prototype.init = function(callback) {
       _.isFunction(callback) ? callback(err) : null;
     }
     else {
-      that.getSites(function(err, sites) {
+      that.getServices(function(err, sites) {
 
         that.emit('update', sites);
         
