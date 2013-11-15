@@ -5,9 +5,9 @@ var EventEmitter = require('events').EventEmitter;
 
 var CouchConfig = function(options) {
 
-  // setup defaults 
-  var requiredProps = ['host', 'port', 'databaseName'];
-  _.each(options, function(v,k) {
+  // setup defaults
+  var requiredProps = ['host', 'port', 'databaseName', 'view'];
+  _.each(options || {}, function(v,k) {
     if (!options[k]) {
       throw new Error('CouchDB configuration error.  Missing options.' + k);
     }
@@ -36,7 +36,7 @@ CouchConfig.prototype.init = function(callback) {
 
     if (!exists && !err) {
       err = new Error('Database ' + options.databaseName + ' does not exist.');
-    } 
+    }
 
     if (err) {
       _.isFunction(callback) ? callback(err) : null;
@@ -45,7 +45,7 @@ CouchConfig.prototype.init = function(callback) {
       that.getServices(function(err, sites) {
 
         that.emit('update', sites);
-        
+
         _.isFunction(callback) ? callback(err, sites) : null;
       });
     }
@@ -77,10 +77,12 @@ CouchConfig.prototype.getServices = function(callback) {
   }
 
   // get all site configs for this app
-  this.db.view('sites/active', function(err, docs) {
-    
+  this.db.view(this.options.view, { include_docs: true }, function(err, rows) {
     if (!err) {
-      var sites = _.map(docs, function(doc) { var s = doc.value; s.id = s._id; return s; });
+      var sites = _.map(rows, function(row) {
+        row.doc.id = row.doc._id;
+        return row.doc;
+      });
     }
 
     _.isFunction(callback) ? callback(err, sites) : null;
