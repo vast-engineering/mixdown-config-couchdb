@@ -56,9 +56,16 @@ CouchConfig.prototype.init = function(callback) {
 
       // emitthe changed site.
       feed.on('change', function(change) {
-        var site = change.doc;
-        site.id = site._id;
-        that.emit('update', [site]);
+        that.getServices(function(err, sites) {
+
+          if (err) {
+            logger.error('Problem getting view for hot reload.');
+            logger.error(err);
+            return;
+          }
+
+          that.emit('update', sites);
+        });
       });
 
       feed.on('error', function(err) {
