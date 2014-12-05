@@ -21,7 +21,7 @@
     "url": "https://github.com/mixdown/mixdown-config-couchdb/issues"
   },
   "dependencies": {
-    "cradle": "~0.6.6",
+    "cradle": "0.6.7",
     "lodash": "~2.2.0"
   },
   "devDependencies": {
