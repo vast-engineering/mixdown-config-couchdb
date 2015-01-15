@@ -4,11 +4,14 @@ var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
 var fs = require('fs');
+
 var when = require('when');
 var node = require('when/node');
 var fn = require('when/function');
+var callbacks = require('when/callbacks');
 
 var INCLUDE_DOCS = {include_docs: true};
+var DB_CHANGE = {since: 'now', include_docs: true};
 
 var CouchConfig = function (options) {
 
@@ -32,68 +35,59 @@ util.inherits(CouchConfig, EventEmitter);
  **/
 CouchConfig.prototype.init = function (callback) {
   var options = this.options;
+  var liftedCallback = node.liftCallback(callback);
 
   // Create cradle connection
   var db = this.db = new (cradle.Connection)(options.host, options.port, options.extraConf).database(options.databaseName);
   var that = this;
 
-  // check that database exists
-  db.exists(function (err, exists) {
+  var dbExists = node.lift(db.exists.bind(db));
+  var getDbChangeHandler = db.changes.bind(db, DB_CHANGE, null);
+  var getService = node.lift(this.getServices.bind(that));
+  var failIfNoDb = function (exists) {
+    if (!exists) throw new Error('Database ' + options.databaseName + ' does not exist.\n');
+  };
 
-    if (!exists && !err) {
-      err = new Error('Database ' + options.databaseName + ' does not exist.');
-    }
+  function emitUpdate (sites) {
+    that.emit('update', sites);
+  }
 
-    if (err) {
-      _.isFunction(callback) ? callback(err) : null;
-    }
-    else {
-      that.getServices(function (err, sites) {
-        that.emit('update', sites);
+  function subscribeToChanges (feed) {
+    feed.on('error', function (err) {
+      logger.error("Subscription to couchdb failed");
+      logger.error(err);
+    });
 
-        _.isFunction(callback) ? callback(err, sites) : null;
-      });
-    }
-
-    // setup follow and event emitters.
-    if (!err && exists) {
-      var feed = db.changes({since: 'now', include_docs: true});
-
-      // emitthe changed site.
-      feed.on('change', function (change) {
-        that.getServices(function (err, sites) {
-
-          if (err) {
-            logger.error('Problem getting view for hot reload.');
-            logger.error(err);
-            return;
-          }
-          that.emit('update', sites);
+    feed.on('change', function () {
+      getService()
+        .then(emitUpdate)
+        .catch(function (err) {
+          logger.error("Can't fetch couchdb or config changes");
+          logger.error(err);
         });
+    });
+  }
+
+  var dbExistsResult = dbExists()
+      .tap(failIfNoDb)
+      .then(getDbChangeHandler)
+      .tap(subscribeToChanges)
+      .catch(function(err) {
+        logger.error(err.stack);  
       });
 
-      feed.on('error', function (err) {
-        // this is a serious error.  We may need a timeout before retrying.
-        // For now, we just stop listening to changes.
-        that.emit('error', err);
-      });
-    }
-
-  });
+  liftedCallback(dbExistsResult);
 };
 
 CouchConfig.prototype.getServices = function (callback) {
 
   var passConfiguration = node.liftCallback(callback);
-  var readCouchDb = node.lift(_.bind(this.db.view, this.db)); // OOP call so set this to the object.
+  var readCouchDb = node.lift(this.db.view.bind(this.db));
   var fileToJson = fn.compose(node.lift(fs.readFile), fn.lift(JSON.parse));
 
-  var files = this.options.files || []; 
-  
-    var readAllFiles = when.map(files, function (v) {
-      return fileToJson(v, 'utf8');
-    });  
-  
+  var files = this.options.files || [];
+
+  var readAllFiles = when.map(files, function (v, i) { return fileToJson(v); });
 
   var rowsToDocs = when.lift(function ensureIds(rows) {
     return _.map(rows, function (row) {
@@ -114,7 +108,7 @@ CouchConfig.prototype.getServices = function (callback) {
   passConfiguration(results);
 
   function onError(reason) {
-    throw new Error("Reading configuration failed\n" + reason);
+    logger.error("Reading configuration failed: ", reason);
   }
 };
 
