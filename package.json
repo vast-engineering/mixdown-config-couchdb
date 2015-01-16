@@ -1,6 +1,6 @@
 {
   "name": "mixdown-config-couchdb",
-  "version": "0.0.4",
+  "version": "2.0.0",
   "description": "Mixdown service config provider for couchdb.",
   "main": "index.js",
   "scripts": {
